@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/white"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="20dp"
+        android:layout_marginTop="40dp"
+        android:padding="10dp"
+        android:text="远程监控系统"
+        android:textColor="@color/text_color"
+        android:textSize="20sp" />
+
+    <EditText
+        android:id="@+id/et_ip"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/sharp_4dp_radius_white_solid_blue_mid_stroke"
+        android:hint="输入ip地址"
+        android:lines="1"
+        android:padding="10dp"
+        android:textColor="@color/text_color"
+        android:textColorHint="@color/text_color_hint" />
+
+    <EditText
+        android:id="@+id/et_port"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:background="@drawable/sharp_4dp_radius_white_solid_blue_mid_stroke"
+        android:hint="输入端口"
+        android:inputType="number"
+        android:lines="1"
+        android:maxLength="6"
+        android:padding="10dp"
+        android:textColor="@color/text_color"
+        android:textColorHint="@color/text_color_hint" />
+
+    <TextView
+        android:id="@+id/tv_apply"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:background="@drawable/selector_4dp_radius_blue"
+        android:paddingBottom="10dp"
+        android:paddingLeft="40dp"
+        android:paddingRight="40dp"
+        android:paddingTop="10dp"
+        android:text="连接"
+        android:textColor="@color/white"
+        android:textSize="15sp" />
+</LinearLayout>

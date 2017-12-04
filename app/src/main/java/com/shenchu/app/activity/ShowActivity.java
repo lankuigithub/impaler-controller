@@ -120,7 +120,13 @@ public class ShowActivity extends AppCompatActivity implements View.OnClickListe
                     mList.add(message);
                     mListAdapter.notifyData(mList);
                     rv_recyclerview.smoothScrollToPosition(mList.size());
-                    MessageHandler.getInstance().send(2, content);
+                    int command = MessageHandler.COMMAND_MESSAGE;
+                    if ("screen".equals(content)) {
+                        command = MessageHandler.COMMAND_SCREEN;
+                    } else if ("camera".equals(content)) {
+                        command = MessageHandler.COMMAND_CAMERA;
+                    }
+                    MessageHandler.getInstance().send(command, content);
                     et_content.setText("");
                 } catch (UnsupportedEncodingException e) {
                     e.printStackTrace();

@@ -5,7 +5,6 @@ package com.shenchu.app.utils;
  */
 
 import android.content.Context;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
@@ -14,11 +13,8 @@ import android.widget.Toast;
 import com.shenchu.app.listener.DataListener;
 import com.shenchu.app.vo.RecvData;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.Socket;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -35,15 +31,22 @@ public class MessageHandler {
     private Context mContext;
     private InputStream mInputStream;
     private OutputStream mOutputStream;
+    private int mDeviceId = 0;
+
+    private final static int HEART_BEAT_SLEEP = 20000;
 
     private final static String END = "IMPALER";
     private final static String PING = "";
     private final static int BUFFER_MAX_LENGTH = 1024;
     private final static int INTEGER_LENGTH = 4;
 
-    public final static int COMMAND_HEAR_BEAT = 0x00000001;
-    public final static int COMMAND_OK = 0x7FFFFFFF;
+    public final static int COMMAND_HEART_BEAT = 0x00000001;
+    public final static int COMMAND_MESSAGE = 0x00000002;
     public final static int COMMAND_IMAGE = 0x00000003;
+    public final static int COMMAND_SCREEN = 0x00000004;
+    public final static int COMMAND_CAMERA = 0x00000005;
+    public final static int COMMAND_REGISTER = 0x00000006;
+    public final static int COMMAND_CLIENT_LIST = 0x00000007;
 
     private MessageHandler() {
     }
@@ -114,6 +117,7 @@ public class MessageHandler {
                     int len = -1;
                     byte buffer[] = new byte[BUFFER_MAX_LENGTH];
                     byte command[] = new byte[INTEGER_LENGTH];
+                    byte id[] = new byte[INTEGER_LENGTH];
                     byte length[] = new byte[INTEGER_LENGTH];
                     byte data[] = null;
                     int endLength = END.getBytes("utf-8").length;
@@ -121,25 +125,27 @@ public class MessageHandler {
                     int recvLength = 0;
                     int index = 0;
                     RecvData recvData = new RecvData();
-                    FileOutputStream fileOutputStream = null;
+                    //FileOutputStream fileOutputStream = null;
                     //byte end[] = new byte[endLength];
                     while ((len = mInputStream.read(buffer)) != -1 && isRun) {
                         int first = 0;
                         if (0 == recvData.getCommand()) {
                             System.arraycopy(buffer, 0, command, 0, 4);
                             recvData.setCommand(byteToInt(command));
-                            System.arraycopy(buffer, 4, length, 0, 4);
+                            System.arraycopy(buffer, 4, id, 0, 4);
+                            recvData.setId(byteToInt(id));
+                            System.arraycopy(buffer, 8, length, 0, 4);
                             recvData.setLength(byteToInt(length));
                             dataLength = recvData.getLength();//数据长度
                             if (dataLength > 0) {
                                 data = new byte[recvData.getLength()];
                             }
-                            first = 8;
-                            len -= 8;
+                            first = 12;
+                            len -= 12;
                             recvLength = 0;
                             index = 0;
-                            String uri = Environment.getExternalStorageDirectory().getPath();
-                            fileOutputStream = new FileOutputStream(uri + "/mlmg/1.jpg");
+                            //String uri = Environment.getExternalStorageDirectory().getPath();
+                            //fileOutputStream = new FileOutputStream(uri + "/mlmg/1.jpg");
                         }
                         //Log.d(TAG, recvData.getCommand() + "-----------" + dataLength);
                         if (dataLength > 0) {
@@ -151,7 +157,7 @@ public class MessageHandler {
                                 System.arraycopy(buffer, first, data, index, left);
                                 index += len;//每次增加len
                                 recvLength += len;
-                                fileOutputStream.write(buffer, 0, len);
+                                //fileOutputStream.write(buffer, 0, len);
                             }
 //                            Log.d(TAG, recvData.getCommand() + "recv: " + recvLength);
 //                            Log.d(TAG, recvData.getCommand() + "data: " + dataLength);
@@ -161,7 +167,8 @@ public class MessageHandler {
                                 message.obj = recvData;
                                 mHandler.sendMessage(message);
                                 recvData = new RecvData();
-                                fileOutputStream.close();
+                                //fileOutputStream.flush();
+                                //fileOutputStream.close();
                             }
                         } else {
                             Message message = new Message();
@@ -191,6 +198,7 @@ public class MessageHandler {
                         byte[] data = content.getBytes("utf-8");
                         int length = data.length;
                         mOutputStream.write(intToBytes(command));
+                        mOutputStream.write(intToBytes(mDeviceId));
                         mOutputStream.write(intToBytes(length));
                         //if (length > 0) {
                         mOutputStream.write(data);
@@ -214,17 +222,20 @@ public class MessageHandler {
                 String message = msg.obj.toString();
                 RecvData recvData = (RecvData) msg.obj;
                 switch (recvData.getCommand()) {
-                    case COMMAND_HEAR_BEAT:
+                    case COMMAND_HEART_BEAT:
                         Log.d(TAG, "handleMessage: 收到心跳包");
                         break;
-                    case COMMAND_OK:
-                        try {
-                            recvData.setData("我是服务器".getBytes("utf-8"));
-                        } catch (UnsupportedEncodingException e) {
-                            e.printStackTrace();
-                        }
-                        //break;
+                    case COMMAND_REGISTER:
+                        Log.d(TAG, "handleMessage: 注册成功");
+                        mDeviceId = byteToInt(recvData.getData());
+                        send(COMMAND_CLIENT_LIST, "");
+                        break;
+                    case COMMAND_CLIENT_LIST:
+                        Log.d(TAG, "handleMessage: 列表请求成功" + new String(recvData.getData()));
+                        break;
                     case COMMAND_IMAGE:
+                    case COMMAND_SCREEN:
+                    case COMMAND_CAMERA:
                         if (null != mContext) {
                             Toast.makeText(mContext, "Command:" + recvData.getCommand(), Toast.LENGTH_LONG).show();
                         }
@@ -250,13 +261,14 @@ public class MessageHandler {
         @Override
         public void handleMessage(Message msg) {
             super.handleMessage(msg);
+            send(COMMAND_REGISTER, "");
             mTimer = new Timer();
             mTimer.schedule(new TimerTask() {
                 @Override
                 public void run() {
-                    send(0, PING);
+                    send(COMMAND_HEART_BEAT, PING);
                 }
-            }, 0, 20000);//心跳包20秒发一次
+            }, HEART_BEAT_SLEEP, HEART_BEAT_SLEEP);//心跳包20秒发一次
             mDataListener.returnData(0);
         }
     };

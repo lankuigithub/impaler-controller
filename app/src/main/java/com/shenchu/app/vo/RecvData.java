@@ -7,6 +7,7 @@ package com.shenchu.app.vo;
 public class RecvData extends BaseBean {
     private int command;
     private int length;
+    private int id;
     private byte data[];
 
     public int getCommand() {
@@ -15,6 +16,14 @@ public class RecvData extends BaseBean {
 
     public void setCommand(int command) {
         this.command = command;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
     }
 
     public int getLength() {

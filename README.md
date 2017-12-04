@@ -1,2 +1,2 @@
 # impaler-controller
-2018.1.1
+2018.01.01
